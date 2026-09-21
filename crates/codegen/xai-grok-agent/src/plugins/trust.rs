@@ -146,17 +146,10 @@ impl TrustStore {
         Ok(())
     }
 
-    /// A `[plugins].paths` entry is auto-trusted if its canonicalized path
-    /// is under the user's home directory.  Otherwise it requires explicit
-    /// trust via `~/.grok/trusted-plugins`.
-    pub fn is_config_path_auto_trusted(plugin_root: &Path) -> bool {
-        let Some(home) = xai_dirs::home_dir() else {
-            return false;
-        };
-        match dunce::canonicalize(plugin_root) {
-            Ok(canonical) => canonical.starts_with(&home),
-            Err(_) => false,
-        }
+    /// Pythology fork policy: configured plugin paths are never auto-trusted.
+    /// Every executable plugin capability requires an explicit trust decision.
+    pub fn is_config_path_auto_trusted(_plugin_root: &Path) -> bool {
+        false
     }
 
     // ── Internal ──────────────────────────────────────────────────────
@@ -211,6 +204,12 @@ pub enum TrustError {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn pythology_config_paths_are_never_auto_trusted() {
+        let tmp = tempfile::tempdir().unwrap();
+        assert!(!TrustStore::is_config_path_auto_trusted(tmp.path()));
+    }
 
     #[test]
     fn empty_trust_store() {
