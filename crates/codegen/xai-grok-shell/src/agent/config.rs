@@ -355,13 +355,11 @@ impl EndpointsConfig {
             && blank_as_unset(&self.otel_exporter_otlp_headers).is_some();
         endpoint_consumed || headers_consumed
     }
-    /// Trace export enabled unless `OTEL_TRACES_EXPORTER=none`.
-    /// Deliberately still honored by the internal pipeline even with `GROK_EXTERNAL_OTEL` set: disabling internal span export is the safe direction.
+    /// Pythology fork policy: the upstream internal OTLP trace pipeline is hard-disabled.
+    /// External, Pythology-owned observability can be added separately after an explicit review.
     pub(crate) fn resolve_traces_export_enabled(&self) -> bool {
-        !matches!(
-            self.otel_traces_exporter.as_deref().map(str::trim),
-            Some("none")
-        )
+        let _ = self;
+        false
     }
     /// `OTEL_BSP_SCHEDULE_DELAY` / `OTEL_TRACES_EXPORT_INTERVAL`: tuning-only, deliberately shared between the internal and external pipelines.
     pub(crate) fn resolve_otlp_export_interval(&self) -> Option<std::time::Duration> {
@@ -2370,21 +2368,10 @@ impl Config {
         }
         Resolved::new(TelemetryMode::Disabled, ConfigSource::Default)
     }
+    /// Pythology fork policy: session/repository trace uploads are not an available capability.
+    /// This intentionally ignores environment, config, requirements, and remote feature flags.
     pub(crate) fn resolve_trace_upload(&self) -> Resolved<bool> {
-        let mode = self.resolve_telemetry_mode();
-        let ff = if mode.value.is_disabled() {
-            None
-        } else {
-            self.remote_settings
-                .as_ref()
-                .and_then(|s| s.trace_upload_enabled)
-        };
-        BoolFlag::env("GROK_TELEMETRY_TRACE_UPLOAD")
-            .requirement(self.requirements.trace_upload.pinned())
-            .config(self.telemetry.trace_upload)
-            .feature_flag(ff)
-            .default(mode.value.is_enabled())
-            .resolve()
+        Resolved::new(false, ConfigSource::Default)
     }
     /// Resolve jemalloc heap-profile config from stored remote settings and the current gates.
     pub fn resolve_jemalloc_heap_profile(

@@ -1,0 +1,16 @@
+# Pythology fork: all changes require owner review once branch protection is enabled.
+* @PythologyIntelligence
+
+# High-risk execution / egress surfaces.
+.github/ @PythologyIntelligence
+Cargo.toml @PythologyIntelligence
+Cargo.lock @PythologyIntelligence
+crates/codegen/xai-grok-shell/src/upload/ @PythologyIntelligence
+crates/codegen/xai-grok-shell/src/extensions/feedback_trace.rs @PythologyIntelligence
+crates/codegen/xai-grok-shell/src/agent/remote_config/ @PythologyIntelligence
+crates/codegen/xai-grok-shell/src/agent/config.rs @PythologyIntelligence
+crates/codegen/xai-grok-telemetry/ @PythologyIntelligence
+crates/codegen/xai-grok-sandbox/ @PythologyIntelligence
+crates/codegen/xai-grok-tools/src/util/shell_env_policy.rs @PythologyIntelligence
+crates/codegen/xai-grok-agent/src/plugins/ @PythologyIntelligence
+crates/codegen/xai-grok-mcp/ @PythologyIntelligence

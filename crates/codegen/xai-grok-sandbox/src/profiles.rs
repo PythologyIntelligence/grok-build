@@ -68,10 +68,11 @@ pub struct SandboxConfig {
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum ProfileName {
-    #[default]
     Workspace,
     Devbox,
     ReadOnly,
+    /// Pythology fork default: filesystem-minimal profile with child-network restriction.
+    #[default]
     Strict,
     Off,
     Custom(String),
@@ -569,6 +570,11 @@ impl ProfileName {
 mod tests {
     use super::*;
     use crate::test_util::{network_inheritance_config, skip_if_host_hook_write_deny_unresolvable};
+
+    #[test]
+    fn pythology_default_profile_is_strict() {
+        assert_eq!(ProfileName::default(), ProfileName::Strict);
+    }
 
     #[test]
     fn parse_profile_names() {

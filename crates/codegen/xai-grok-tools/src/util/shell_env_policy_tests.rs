@@ -42,12 +42,21 @@ fn apply_policy_reshapes_command_env() {
 }
 
 #[test]
-fn apply_noop_or_absent_policy_leaves_command_untouched() {
+fn absent_policy_leaves_command_untouched() {
     let mut cmd = tokio::process::Command::new("true");
     apply_shell_environment_policy(&mut cmd, None);
-    apply_shell_environment_policy(&mut cmd, Some(&ShellEnvironmentPolicy::default()));
-    // No env_clear and no sets: the command carries no explicit env entries.
     assert_eq!(cmd.as_std().get_envs().count(), 0);
+}
+
+#[test]
+fn pythology_default_policy_is_restrictive() {
+    let policy = ShellEnvironmentPolicy::default();
+    assert_eq!(policy.inherit, ShellEnvironmentPolicyInherit::Core);
+    assert!(!policy.ignore_default_excludes);
+    assert!(!policy.is_noop());
+    assert!(!policy.allows("MY_API_KEY"));
+    assert!(policy.allows_with_inherit("PATH"));
+    assert!(!policy.allows_with_inherit("RANDOM_VAR"));
 }
 
 #[test]
@@ -137,7 +146,7 @@ fn allows_filters_by_name_case_insensitively() {
         ..Default::default()
     };
     assert!(!scrub.allows("my_api_key")); // `*KEY*` matches case-insensitively
-    assert!(ShellEnvironmentPolicy::default().allows("MY_API_KEY")); // default allows all
+    assert!(!ShellEnvironmentPolicy::default().allows("MY_API_KEY")); // Pythology default scrubs likely secrets
 }
 
 #[test]
