@@ -1,0 +1,59 @@
+name: Upstream Sync
+
+on:
+  schedule:
+    - cron: "0 18 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: upstream-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout fork
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch upstream and prepare review branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          git config user.name "pythology-upstream-sync"
+          git config user.email "actions@users.noreply.github.com"
+
+          git remote add upstream https://github.com/xai-org/grok-build.git
+          git fetch upstream main
+          git fetch origin main
+
+          old_sha="$(git ls-remote --heads origin refs/heads/automation/upstream-sync | cut -f1)"
+          git checkout -B automation/upstream-sync origin/main
+
+          # Conflicts stop the job. Never auto-resolve Pythology security divergence.
+          git merge --no-ff --no-edit upstream/main
+
+          if git diff --quiet origin/main...HEAD; then
+            echo "No upstream changes to propose."
+            exit 0
+          fi
+
+          if [ -n "$old_sha" ]; then
+            git push --force-with-lease=refs/heads/automation/upstream-sync:"$old_sha"               origin HEAD:refs/heads/automation/upstream-sync
+          else
+            git push origin HEAD:refs/heads/automation/upstream-sync
+          fi
+
+          if gh pr view automation/upstream-sync --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh pr edit automation/upstream-sync --repo "$GITHUB_REPOSITORY"               --title "chore: review upstream xai-org/grok-build sync"               --body "Automated upstream staging only. Do not merge without CI and human review. Preserve all Pythology lockdown invariants documented in PYTHOLOGY_SECURITY.md."
+          else
+            gh pr create --repo "$GITHUB_REPOSITORY"               --base main               --head automation/upstream-sync               --title "chore: review upstream xai-org/grok-build sync"               --body "Automated upstream staging only. Do not merge without CI and human review. Preserve all Pythology lockdown invariants documented in PYTHOLOGY_SECURITY.md."
+          fi
