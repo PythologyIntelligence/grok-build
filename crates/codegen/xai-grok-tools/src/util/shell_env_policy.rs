@@ -27,8 +27,8 @@ where
 #[serde(rename_all = "kebab-case")]
 pub enum ShellEnvironmentPolicyInherit {
     /// Core platform variables only (PATH, HOME, SHELL, ...).
-    Core,
     #[default]
+    Core,
     All,
     None,
 }
@@ -55,8 +55,10 @@ pub struct ShellEnvironmentPolicy {
 impl Default for ShellEnvironmentPolicy {
     fn default() -> Self {
         Self {
-            inherit: ShellEnvironmentPolicyInherit::All,
-            ignore_default_excludes: true,
+            // Pythology fork: subprocesses receive only core platform variables by
+            // default, and names resembling credentials are scrubbed.
+            inherit: ShellEnvironmentPolicyInherit::Core,
+            ignore_default_excludes: false,
             exclude: Vec::new(),
             set: HashMap::new(),
             include_only: Vec::new(),
