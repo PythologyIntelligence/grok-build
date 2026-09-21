@@ -103,7 +103,8 @@ fn remote_fetch_enabled_from_layers(layers: &crate::config::ConfigLayers) -> boo
     .into_iter()
     .flatten()
     .find_map(remote_fetch_value)
-    .unwrap_or(true)
+    // Pythology fork: no backend catalog/settings egress unless explicitly enabled.
+    .unwrap_or(false)
 }
 
 /// Err-arm fallback for [`resolve_remote_fetch_enabled`]: walks the independently loadable policy tiers in Ok-arm walk order.
@@ -118,7 +119,8 @@ fn remote_fetch_enabled_from_policy_layers(
         .into_iter()
         .flatten()
         .find_map(remote_fetch_value)
-        .unwrap_or(true)
+        // Fail closed if no trusted policy layer explicitly enables remote fetch.
+        .unwrap_or(false)
 }
 
 #[cfg(test)]
@@ -143,8 +145,8 @@ mod tests {
     }
 
     #[test]
-    fn remote_fetch_defaults_to_true_when_absent() {
-        assert!(remote_fetch_enabled_from_layers(&empty_layers()));
+    fn remote_fetch_defaults_to_false_when_absent() {
+        assert!(!remote_fetch_enabled_from_layers(&empty_layers()));
     }
 
     #[test]
@@ -202,7 +204,7 @@ mod tests {
 
         let mut layers = empty_layers();
         layers.env_overlay = Some(features_remote_fetch(false));
-        assert!(remote_fetch_enabled_from_layers(&layers));
+        assert!(!remote_fetch_enabled_from_layers(&layers));
     }
 
     #[test]
@@ -271,8 +273,8 @@ mod tests {
             Some(&on)
         ));
         assert!(
-            remote_fetch_enabled_from_policy_layers(None, None, None),
-            "genuinely absent policy fails open"
+            !remote_fetch_enabled_from_policy_layers(None, None, None),
+            "genuinely absent policy fails closed in the Pythology fork"
         );
     }
 }
