@@ -5,8 +5,14 @@ use crate::session::FeedbackTraceUploadIntent;
 use agent_client_protocol as acp;
 /// Bounds the one-shot GCS upload so a stalled connection can't hang the ACP handler; sized for the 50 MiB archive cap on a slow uplink.
 const FEEDBACK_TRACE_UPLOAD_TIMEOUT_SECS: u64 = 120;
-pub(super) async fn handle_upload_trace(agent: &MvpAgent, args: &acp::ExtRequest) -> ExtResult {
-    handle_upload_trace_with_session_dir(agent, args, None).await
+pub(super) async fn handle_upload_trace(
+    _agent: &MvpAgent,
+    _args: &acp::ExtRequest,
+) -> ExtResult {
+    // Pythology fork policy: feedback must never become a side-channel for exporting
+    // session archives or repository material. Keep the test-only helper below so
+    // upstream parsing/archive tests can remain useful without exposing the capability.
+    Err(acp::Error::internal_error().data("trace upload is disabled in the Pythology fork"))
 }
 #[cfg(test)]
 pub(crate) async fn handle_upload_trace_for_test(
